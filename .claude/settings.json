@@ -5,6 +5,9 @@
       "Bash(gh pr list *)",
       "Bash(gh issue view *)",
       "Bash(gh issue list *)"
+    ],
+    "deny": [
+      "Read(.env*)"
     ]
   }
 }
