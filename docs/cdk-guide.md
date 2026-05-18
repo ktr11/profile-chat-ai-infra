@@ -7,201 +7,86 @@
 ## プロジェクト構成
 
 ```
-infra/cdk/
 ├── bin/
 │   └── app.ts              # CDK App エントリーポイント
 ├── lib/
-│   ├── stacks/
-│   │   ├── api-stack.ts    # Lambda + API Gateway / Function URL
-│   │   ├── data-stack.ts   # DynamoDB + S3 + S3 Vectors
-│   │   └── iam-stack.ts    # IAM ロール・ポリシー
-│   └── constructs/
-│       ├── lambda-fastapi.ts   # LWA を使った FastAPI Lambda
-│       └── dynamodb-table.ts   # TTL 付き DynamoDB テーブル
+│   ├── stage.ts            # AppStage（dev/prod 環境定義）
+│   └── stacks/
+│       ├── storage.ts      # DynamoDB テーブル定義
+│       └── iam.ts          # IAM ロール・ポリシー（現在は空）
 ├── cdk.json
 ├── package.json
 └── tsconfig.json
 ```
 
-## スタック設計方針
+## スタック設計
 
-### スタック分割の理由
+### 環境分離（Stage）
 
-```mermaid
-flowchart LR
-    DataStack["data-stack<br/>（依存なし）"] --> ApiStack["api-stack<br/>（data参照）"] --> IamStack["iam-stack<br/>（全リソース参照）"]
-```
-
-- **data-stack**: DynamoDB・S3 などのステートフルリソース。デプロイ頻度が低い
-- **api-stack**: Lambda・Function URL などのステートレスリソース。コード変更のたびにデプロイ
-- **iam-stack**: 最小権限の IAM。リソース ARN が確定してから定義
-
-### 環境分離
+`bin/app.ts` で `dev` と `prod` の2環境を定義しています。
 
 ```typescript
 // bin/app.ts
 const app = new cdk.App();
-const env = { account: process.env.CDK_DEFAULT_ACCOUNT, region: "us-east-1" };
-
-new DataStack(app, "ProfileChatData-Dev", { env, stage: "dev" });
-new ApiStack(app, "ProfileChatApi-Dev", { env, stage: "dev" });
+const env = {
+  account: process.env.CDK_DEFAULT_ACCOUNT,
+  region: process.env.CDK_DEFAULT_REGION ?? 'ap-northeast-1',
+};
+new AppStage(app, 'dev', { env });
+new AppStage(app, 'prod', { env });
 ```
 
-## 主要スタックの実装例
+### AppStage
 
-### DataStack
+各環境で作成されるスタックを定義します。
 
 ```typescript
-// lib/stacks/data-stack.ts
-import * as cdk from "aws-cdk-lib";
-import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
-import * as s3 from "aws-cdk-lib/aws-s3";
-
-export class DataStack extends cdk.Stack {
-  public readonly checkpointTable: dynamodb.Table;
-  public readonly stateBucket: s3.Bucket;
-
-  constructor(scope: cdk.App, id: string, props: DataStackProps) {
+// lib/stage.ts
+export class AppStage extends cdk.Stage {
+  constructor(scope: Construct, id: string, props?: cdk.StageProps) {
     super(scope, id, props);
-
-    // LangGraph チェックポインター用テーブル
-    this.checkpointTable = new dynamodb.Table(this, "CheckpointTable", {
-      tableName: `profile-chat-checkpoints-${props.stage}`,
-      partitionKey: { name: "thread_id", type: dynamodb.AttributeType.STRING },
-      sortKey: { name: "checkpoint_id", type: dynamodb.AttributeType.STRING },
-      timeToLiveAttribute: "expires_at",  // TTL 自動削除
-      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,  // サーバーレス課金
-      removalPolicy:
-        props.stage === "prod"
-          ? cdk.RemovalPolicy.RETAIN  // 本番データは保護
-          : cdk.RemovalPolicy.DESTROY,
-    });
-
-    // 大サイズ状態オフロード用 S3
-    this.stateBucket = new s3.Bucket(this, "StateBucket", {
-      bucketName: `profile-chat-ai-state-${this.account}-${props.stage}`,
-      lifecycleRules: [
-        {
-          id: "delete-old-states",
-          expiration: cdk.Duration.days(90),  // 90日で自動削除
-        },
-      ],
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-      autoDeleteObjects: props.stage !== "prod",
-    });
+    new StorageStack(this, 'Storage', { ...props, stageName: id as 'dev' | 'prod' });
+    new IamStack(this, 'Iam', props);
   }
 }
 ```
 
-### ApiStack（Lambda Web Adapter）
+### StorageStack
 
-```typescript
-// lib/stacks/api-stack.ts
-import * as lambda from "aws-cdk-lib/aws-lambda";
-import * as ecr from "aws-cdk-lib/aws-ecr";
+DynamoDB テーブルを定義します。テーブル名に `{stage}-` プレフィックスを付与して環境を分離しています。
 
-export class ApiStack extends cdk.Stack {
-  constructor(scope: cdk.App, id: string, props: ApiStackProps) {
-    super(scope, id, props);
+- `{stage}-user_chat_count` — チャット回数制限
+- `{stage}-user_chat_history` — 会話履歴
 
-    const fn = new lambda.DockerImageFunction(this, "ChatApiFunction", {
-      functionName: `profile-chat-api-${props.stage}`,
-      code: lambda.DockerImageCode.fromEcr(
-        ecr.Repository.fromRepositoryName(this, "Repo", "profile-chat-api"),
-        { tagOrDigest: "latest" }
-      ),
-      memorySize: 512,
-      timeout: cdk.Duration.seconds(60),  // ストリーミングのために長めに設定
-      environment: {
-        DYNAMODB_TABLE: props.checkpointTable.tableName,
-        S3_BUCKET: props.stateBucket.bucketName,
-        BEDROCK_REGION: "us-east-1",
-        PORT: "8000",  // LWA がこのポートをリッスン
-        AWS_LWA_INVOKE_MODE: "response_stream",  // ストリーミングモード
-      },
-    });
+詳細は [aws-resources.md](./aws-resources.md) を参照。
 
-    // Lambda Function URL（API Gateway なしで直接 HTTPS エンドポイント）
-    const fnUrl = fn.addFunctionUrl({
-      authType: lambda.FunctionUrlAuthType.NONE,
-      cors: {
-        allowedOrigins: ["https://your-portfolio.com"],
-        allowedMethods: [lambda.HttpMethod.POST],
-      },
-      invokeMode: lambda.InvokeMode.RESPONSE_STREAM,  // SSE ストリーミング
-    });
+### IamStack
 
-    new cdk.CfnOutput(this, "ApiUrl", { value: fnUrl.url });
-  }
-}
-```
+IAM ロール・ポリシー用のスタック。現在は空です。Lambda 追加時にここにポリシーを定義する予定。
 
-## CDK デプロイ手順
+## デプロイ手順
 
 ```bash
 # 依存関係インストール
-cd infra/cdk
 npm install
 
-# 初回のみ: CDK ブートストラップ
-npx cdk bootstrap aws://ACCOUNT_ID/us-east-1
+# TypeScript コンパイル
+npm run build
 
 # 差分確認
-npx cdk diff ProfileChatData-Dev
+npx cdk diff 'dev/*'
 
-# デプロイ（data → api の順）
-npx cdk deploy ProfileChatData-Dev
-npx cdk deploy ProfileChatApi-Dev
+# デプロイ（dev 環境）
+npx cdk deploy 'dev/*'
 
-# 全スタック一括デプロイ
-npx cdk deploy --all
+# デプロイ（prod 環境）
+npx cdk deploy 'prod/*'
 ```
 
-## よくある設定パターン
+## 今後の拡張予定
 
-### Bedrock のアクセス許可
-
-```typescript
-// Bedrock は CDK の高レベル Construct が少ないため、手動で IAM 追加
-fn.addToRolePolicy(
-  new iam.PolicyStatement({
-    effect: iam.Effect.ALLOW,
-    actions: ["bedrock:InvokeModelWithResponseStream"],
-    resources: [
-      `arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-haiku-3-5-v1:0`,
-    ],
-  })
-);
-```
-
-### シークレット管理
-
-```typescript
-import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
-
-// API キーなどを Secrets Manager で管理
-const apiSecret = secretsmanager.Secret.fromSecretNameV2(
-  this, "ApiSecret", "profile-chat/internal-api-key"
-);
-apiSecret.grantRead(fn);
-
-// Lambda の環境変数に ARN を渡す（値そのものは渡さない）
-fn.addEnvironment("SECRET_ARN", apiSecret.secretArn);
-```
-
-## コスト見積もり（月間）
-
-```
-Lambda: 1,000リクエスト × 60秒 × 512MB = ~$0.25
-DynamoDB: 10,000 read/write ≈ $0.03
-S3 state: 10MB ≈ $0.0002
-S3 Vectors: 1,000クエリ ≈ $0.04
-Bedrock Haiku 3.5: 1M tokens ≈ $4.00
-──────────────────────────────────────
-合計目安: 月額 ~$5（使用量による）
-```
-
-## 関連ドキュメント
-
-- [AWS リソース設計](aws-resources.md)
-- [ローカル開発環境](../development/local-setup.md)
+| スタック | 内容 | 時期 |
+|---------|------|------|
+| API スタック | Lambda + Function URL（FastAPI） | LLM 統合時 |
+| RAG スタック | S3 Vectors + Bedrock Knowledge Bases | RAG 実装時 |
+| Auth スタック | Cognito（定義済み・未接続） | 正式ログイン実装時 |
