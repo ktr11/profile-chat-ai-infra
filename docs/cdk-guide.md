@@ -68,19 +68,16 @@ IAM ロール・ポリシー用のスタック。現在は空です。Lambda 追
 
 ```bash
 # 依存関係インストール
-npm install
-
-# TypeScript コンパイル
-npm run build
+pnpm install
 
 # 差分確認
-npx cdk diff 'dev/*'
+pnpm cdk diff 'dev/*'
 
 # デプロイ（dev 環境）
-npx cdk deploy 'dev/*'
+pnpm cdk deploy 'dev/*'
 
 # デプロイ（prod 環境）
-npx cdk deploy 'prod/*'
+pnpm cdk deploy 'prod/*'
 ```
 
 ## 今後の拡張予定
