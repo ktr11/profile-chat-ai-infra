@@ -14,6 +14,7 @@ describe('StorageStack', () => {
     prodTemplate = Template.fromStack(prodStack);
   });
 
+  // CloudFormation テンプレート全体の意図しない変更を検知する
   describe('snapshot', () => {
     test('dev', () => {
       expect(devTemplate.toJSON()).toMatchSnapshot();
@@ -24,6 +25,7 @@ describe('StorageStack', () => {
     });
   });
 
+  // アプリ側が直接参照するテーブル名が変わっていないことを保証する
   describe('table names', () => {
     test('dev tables have dev- prefix', () => {
       devTemplate.hasResourceProperties('AWS::DynamoDB::Table', {
@@ -44,6 +46,7 @@ describe('StorageStack', () => {
     });
   });
 
+  // パーティションキー・ソートキーが変わるとアプリのクエリが全て壊れるため保証する
   describe('key schema', () => {
     test('user_chat_count has trial_uuid (HASH) + date (RANGE)', () => {
       devTemplate.hasResourceProperties('AWS::DynamoDB::Table', {
@@ -66,6 +69,7 @@ describe('StorageStack', () => {
     });
   });
 
+  // prod で PITR が無効化されるとデータロスト時に復旧不可になるため保証する
   describe('point-in-time recovery', () => {
     test('dev has PITR disabled', () => {
       devTemplate.hasResourceProperties('AWS::DynamoDB::Table', {
@@ -82,6 +86,7 @@ describe('StorageStack', () => {
     });
   });
 
+  // スタック削除時にテーブルが消えないよう RETAIN が設定されていることを保証する
   describe('removal policy', () => {
     test('all tables have Retain policy', () => {
       const devResources = devTemplate.toJSON().Resources;
