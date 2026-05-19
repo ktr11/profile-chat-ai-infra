@@ -68,20 +68,41 @@ IAM ロール・ポリシー用のスタック。現在は空です。Lambda 追
 
 ```bash
 # 依存関係インストール
-npm install
-
-# TypeScript コンパイル
-npm run build
+pnpm install
 
 # 差分確認
-npx cdk diff 'dev/*'
+pnpm cdk diff 'dev/*'
 
 # デプロイ（dev 環境）
-npx cdk deploy 'dev/*'
+pnpm cdk deploy 'dev/*'
 
 # デプロイ（prod 環境）
-npx cdk deploy 'prod/*'
+pnpm cdk deploy 'prod/*'
 ```
+
+## テスト
+
+```bash
+pnpm test
+```
+
+### スナップショットテスト
+
+CloudFormation テンプレート全体を前回の出力と比較し、意図しない変更を検知します（`cdk diff` を自動で毎回実行しているイメージ）。
+
+**テストが落ちたときの運用:**
+
+- 意図的な変更 → `pnpm test -- -u` でスナップショットを更新してコミット
+- 意図しない変更 → コードを修正して差分をなくす
+
+### Fine-grained assertion
+
+スナップショットとは別に、壊れたら致命的なプロパティを個別に検証しています。
+
+- テーブル名（アプリが直接参照するため）
+- パーティションキー / ソートキー（変わるとクエリが全て壊れる）
+- prod の PITR 設定（無効化されるとデータ復旧不可）
+- removalPolicy: RETAIN（スタック削除時にテーブルが消えないこと）
 
 ## 今後の拡張予定
 

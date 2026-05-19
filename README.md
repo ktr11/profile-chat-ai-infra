@@ -18,27 +18,22 @@ AWS CDK (TypeScript) で DynamoDB テーブルや IAM ポリシーを定義し�
 
 ```bash
 # 依存関係インストール
-npm install
-
-# TypeScript コンパイル
-npm run build
+pnpm install
 
 # 差分確認
-npx cdk diff 'dev/*'
+pnpm cdk diff 'dev/*'
 
 # デプロイ（dev 環境）
-npx cdk deploy 'dev/*'
+pnpm cdk deploy 'dev/*'
 ```
 
 ## 主要コマンド
 
 ```bash
-npm run build      # TypeScript コンパイル
-npm run watch      # ファイル変更監視 + コンパイル
-npm run test       # Jest テスト実行
-npx cdk diff       # 差分確認
-npx cdk deploy     # デプロイ
-npx cdk synth      # CloudFormation テンプレート出力
+pnpm test          # Jest テスト実行
+pnpm cdk diff      # 差分確認
+pnpm cdk deploy    # デプロイ
+pnpm cdk synth     # CloudFormation テンプレート出力
 ```
 
 ## ドキュメント
