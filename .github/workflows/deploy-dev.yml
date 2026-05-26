@@ -24,5 +24,6 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/ci-github-actions-role
           aws-region: ap-northeast-1
-      - run: pnpm cdk diff 'dev/*'
+      - run: pnpm cdk diff 'ci' 'dev/*'
+      - run: pnpm cdk deploy 'ci' --require-approval never
       - run: pnpm cdk deploy 'dev/*' --require-approval never
