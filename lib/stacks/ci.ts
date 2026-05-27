@@ -84,7 +84,12 @@ export class CiStack extends cdk.Stack {
         actions: ['lambda:UpdateFunctionCode', 'lambda:GetFunction'],
         resources: [
           cdk.Arn.format(
-            { service: 'lambda', resource: 'function', resourceName: '*-profile-chat-ai-api' },
+            {
+              service: 'lambda',
+              resource: 'function',
+              resourceName: '*-profile-chat-ai-api',
+              arnFormat: cdk.ArnFormat.COLON_RESOURCE_NAME,
+            },
             this,
           ),
         ],
