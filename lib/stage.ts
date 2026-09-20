@@ -3,6 +3,7 @@ import { Construct } from 'constructs';
 import { StorageStack } from './stacks/storage';
 import { IamStack } from './stacks/iam';
 import { ApiStack } from './stacks/api';
+import { FeStack } from './stacks/fe';
 
 export class AppStage extends cdk.Stage {
   constructor(scope: Construct, id: string, props?: cdk.StageProps) {
@@ -10,6 +11,11 @@ export class AppStage extends cdk.Stage {
 
     new StorageStack(this, 'Storage', { ...props, stageName: id as 'dev' | 'prod' });
     new IamStack(this, 'Iam', props);
-    new ApiStack(this, 'Api', { ...props, stageName: id as 'dev' | 'prod' });
+    const apiStack = new ApiStack(this, 'Api', { ...props, stageName: id as 'dev' | 'prod' });
+    new FeStack(this, 'Fe', {
+      ...props,
+      stageName: id as 'dev' | 'prod',
+      apiFunctionUrl: apiStack.functionUrl,
+    });
   }
 }
