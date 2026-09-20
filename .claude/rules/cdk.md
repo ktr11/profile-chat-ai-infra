@@ -5,6 +5,7 @@
   - `StorageStack`: DynamoDB テーブル
   - `IamStack`: 環境固有の IAM（現在空）
   - `ApiStack`: Lambda + Function URL
+  - `FeStack`: Next.js Lambda + Function URL + CloudFront（OAC）。API の Function URL を環境変数と `lambda:InvokeFunctionUrl` 権限で受け取る
 
 ## CDK コーディング規約
 
