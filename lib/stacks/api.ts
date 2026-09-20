@@ -9,6 +9,8 @@ interface ApiStackProps extends cdk.StackProps {
 }
 
 export class ApiStack extends cdk.Stack {
+  public readonly functionUrl: lambda.IFunctionUrl;
+
   constructor(scope: Construct, id: string, props: ApiStackProps) {
     super(scope, id, props);
 
@@ -58,7 +60,7 @@ export class ApiStack extends cdk.Stack {
       }),
     );
 
-    fn.addFunctionUrl({
+    this.functionUrl = fn.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.AWS_IAM,
       invokeMode: lambda.InvokeMode.RESPONSE_STREAM,
     });

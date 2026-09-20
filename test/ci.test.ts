@@ -114,4 +114,68 @@ describe('CiStack', () => {
       });
     });
   });
+
+  describe('FE ECR repository', () => {
+    test('creates profile-chat-ai-fe repository', () => {
+      template.hasResourceProperties('AWS::ECR::Repository', {
+        RepositoryName: 'profile-chat-ai-fe',
+      });
+    });
+  });
+
+  describe('FE GitHub Actions role', () => {
+    test('creates ci-fe-github-actions-role', () => {
+      template.hasResourceProperties('AWS::IAM::Role', {
+        RoleName: 'ci-fe-github-actions-role',
+      });
+    });
+
+    test('trusts profile-chat-ai-fe main branch only', () => {
+      template.hasResourceProperties('AWS::IAM::Role', {
+        RoleName: 'ci-fe-github-actions-role',
+        AssumeRolePolicyDocument: {
+          Statement: [
+            {
+              Action: 'sts:AssumeRoleWithWebIdentity',
+              Condition: {
+                StringEquals: {
+                  'token.actions.githubusercontent.com:aud': 'sts.amazonaws.com',
+                },
+                StringLike: {
+                  'token.actions.githubusercontent.com:sub':
+                    'repo:ktr11/profile-chat-ai-fe:ref:refs/heads/main',
+                },
+              },
+              Effect: 'Allow',
+              Principal: {
+                Federated: Match.anyValue(),
+              },
+            },
+          ],
+          Version: '2012-10-17',
+        },
+      });
+    });
+
+    test('has Lambda update permissions scoped to fe function', () => {
+      template.hasResourceProperties('AWS::IAM::Policy', {
+        PolicyDocument: {
+          Statement: Match.arrayWith([
+            Match.objectLike({
+              Action: ['lambda:UpdateFunctionCode', 'lambda:GetFunction'],
+              Effect: 'Allow',
+              Resource: {
+                'Fn::Join': [
+                  '',
+                  Match.arrayWith([
+                    Match.stringLikeRegexp('function:\\*-profile-chat-ai-fe'),
+                  ]),
+                ],
+              },
+            }),
+          ]),
+        },
+      });
+    });
+  });
 });

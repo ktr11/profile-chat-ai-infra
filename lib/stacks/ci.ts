@@ -95,5 +95,66 @@ export class CiStack extends cdk.Stack {
         ],
       }),
     );
+
+    const feRepository = new ecr.Repository(this, 'FeRepository', {
+      repositoryName: 'profile-chat-ai-fe',
+      lifecycleRules: [
+        {
+          maxImageCount: 10,
+          description: 'Keep last 10 images',
+        },
+      ],
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
+    const feRole = new iam.Role(this, 'FeGitHubActionsRole', {
+      roleName: 'ci-fe-github-actions-role',
+      assumedBy: new iam.WebIdentityPrincipal(provider.openIdConnectProviderArn, {
+        StringEquals: {
+          'token.actions.githubusercontent.com:aud': 'sts.amazonaws.com',
+        },
+        StringLike: {
+          'token.actions.githubusercontent.com:sub':
+            'repo:ktr11/profile-chat-ai-fe:ref:refs/heads/main',
+        },
+      }),
+    });
+
+    feRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: ['ecr:GetAuthorizationToken'],
+        resources: ['*'],
+      }),
+    );
+
+    feRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: [
+          'ecr:BatchCheckLayerAvailability',
+          'ecr:PutImage',
+          'ecr:InitiateLayerUpload',
+          'ecr:UploadLayerPart',
+          'ecr:CompleteLayerUpload',
+        ],
+        resources: [feRepository.repositoryArn],
+      }),
+    );
+
+    feRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: ['lambda:UpdateFunctionCode', 'lambda:GetFunction'],
+        resources: [
+          cdk.Arn.format(
+            {
+              service: 'lambda',
+              resource: 'function',
+              resourceName: '*-profile-chat-ai-fe',
+              arnFormat: cdk.ArnFormat.COLON_RESOURCE_NAME,
+            },
+            this,
+          ),
+        ],
+      }),
+    );
   }
 }

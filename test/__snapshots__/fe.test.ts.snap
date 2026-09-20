@@ -1,0 +1,593 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`FeStack snapshot dev 1`] = `
+{
+  "Outputs": {
+    "DistributionDomainName": {
+      "Value": {
+        "Fn::GetAtt": [
+          "Distribution830FAC52",
+          "DomainName",
+        ],
+      },
+    },
+  },
+  "Parameters": {
+    "BootstrapVersion": {
+      "Default": "/cdk-bootstrap/hnb659fds/version",
+      "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]",
+      "Type": "AWS::SSM::Parameter::Value<String>",
+    },
+  },
+  "Resources": {
+    "Distribution830FAC52": {
+      "Properties": {
+        "DistributionConfig": {
+          "CacheBehaviors": [
+            {
+              "AllowedMethods": [
+                "GET",
+                "HEAD",
+              ],
+              "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6",
+              "Compress": true,
+              "PathPattern": "/_next/static/*",
+              "TargetOriginId": "devfeDistributionOrigin18BDA2A59",
+              "ViewerProtocolPolicy": "redirect-to-https",
+            },
+          ],
+          "Comment": "dev-profile-chat-ai-fe",
+          "DefaultCacheBehavior": {
+            "AllowedMethods": [
+              "GET",
+              "HEAD",
+              "OPTIONS",
+              "PUT",
+              "PATCH",
+              "POST",
+              "DELETE",
+            ],
+            "CachePolicyId": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad",
+            "Compress": true,
+            "OriginRequestPolicyId": "b689b0a8-53d0-40ab-baf2-68738e2966ac",
+            "TargetOriginId": "devfeDistributionOrigin18BDA2A59",
+            "ViewerProtocolPolicy": "redirect-to-https",
+          },
+          "Enabled": true,
+          "HttpVersion": "http2",
+          "IPV6Enabled": true,
+          "Origins": [
+            {
+              "CustomOriginConfig": {
+                "OriginProtocolPolicy": "https-only",
+                "OriginSSLProtocols": [
+                  "TLSv1.2",
+                ],
+              },
+              "DomainName": {
+                "Fn::Select": [
+                  2,
+                  {
+                    "Fn::Split": [
+                      "/",
+                      {
+                        "Fn::GetAtt": [
+                          "FeFunctionFunctionUrlCE837F59",
+                          "FunctionUrl",
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+              "Id": "devfeDistributionOrigin18BDA2A59",
+              "OriginAccessControlId": {
+                "Fn::GetAtt": [
+                  "DistributionOrigin1FunctionUrlOriginAccessControl1DA0EA55",
+                  "Id",
+                ],
+              },
+            },
+          ],
+        },
+      },
+      "Type": "AWS::CloudFront::Distribution",
+    },
+    "DistributionOrigin1FunctionUrlOriginAccessControl1DA0EA55": {
+      "Properties": {
+        "OriginAccessControlConfig": {
+          "Name": "devfeDistributionOrigin1FunctionUrlOriginAccessControl476A7E69",
+          "OriginAccessControlOriginType": "lambda",
+          "SigningBehavior": "always",
+          "SigningProtocol": "sigv4",
+        },
+      },
+      "Type": "AWS::CloudFront::OriginAccessControl",
+    },
+    "DistributionOrigin1InvokeFromApiFordevfeDistributionOrigin18BDA2A5921DB7BAA": {
+      "Properties": {
+        "Action": "lambda:InvokeFunctionUrl",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "FeFunctionFunctionUrlCE837F59",
+            "FunctionArn",
+          ],
+        },
+        "Principal": "cloudfront.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":cloudfront::",
+              {
+                "Ref": "AWS::AccountId",
+              },
+              ":distribution/",
+              {
+                "Ref": "Distribution830FAC52",
+              },
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
+    "FeFunctionC517B7C7": {
+      "DependsOn": [
+        "FeFunctionServiceRoleDefaultPolicyC5F6EC0F",
+        "FeFunctionServiceRoleCE7E81CB",
+      ],
+      "Properties": {
+        "Architectures": [
+          "arm64",
+        ],
+        "Code": {
+          "ImageUri": {
+            "Fn::Join": [
+              "",
+              [
+                "123456789012.dkr.ecr.ap-northeast-1.",
+                {
+                  "Ref": "AWS::URLSuffix",
+                },
+                "/profile-chat-ai-fe:dev-latest",
+              ],
+            ],
+          },
+        },
+        "Environment": {
+          "Variables": {
+            "AWS_LWA_INVOKE_MODE": "response_stream",
+            "AWS_LWA_PORT": "3000",
+            "PYTHON_API_URL": {
+              "Fn::ImportValue": "dev-api:ExportsOutputFnGetAttApiFunctionFunctionUrl73AD62DCFunctionUrlC0C6CE5A",
+            },
+          },
+        },
+        "FunctionName": "dev-profile-chat-ai-fe",
+        "MemorySize": 1024,
+        "PackageType": "Image",
+        "Role": {
+          "Fn::GetAtt": [
+            "FeFunctionServiceRoleCE7E81CB",
+            "Arn",
+          ],
+        },
+        "Timeout": 30,
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "FeFunctionFunctionUrlCE837F59": {
+      "Properties": {
+        "AuthType": "AWS_IAM",
+        "InvokeMode": "RESPONSE_STREAM",
+        "TargetFunctionArn": {
+          "Fn::GetAtt": [
+            "FeFunctionC517B7C7",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Url",
+    },
+    "FeFunctionServiceRoleCE7E81CB": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "FeFunctionServiceRoleDefaultPolicyC5F6EC0F": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunctionUrl",
+              "Condition": {
+                "StringEquals": {
+                  "lambda:FunctionUrlAuthType": "AWS_IAM",
+                },
+              },
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "dev-api:ExportsOutputFnGetAttApiFunctionCE271BD4Arn4729005E",
+              },
+            },
+            {
+              "Action": "lambda:InvokeFunction",
+              "Condition": {
+                "Bool": {
+                  "lambda:InvokedViaFunctionUrl": true,
+                },
+              },
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "dev-api:ExportsOutputFnGetAttApiFunctionCE271BD4Arn4729005E",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "FeFunctionServiceRoleDefaultPolicyC5F6EC0F",
+        "Roles": [
+          {
+            "Ref": "FeFunctionServiceRoleCE7E81CB",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+  },
+  "Rules": {
+    "CheckBootstrapVersion": {
+      "Assertions": [
+        {
+          "Assert": {
+            "Fn::Not": [
+              {
+                "Fn::Contains": [
+                  [
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                  ],
+                  {
+                    "Ref": "BootstrapVersion",
+                  },
+                ],
+              },
+            ],
+          },
+          "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI.",
+        },
+      ],
+    },
+  },
+}
+`;
+
+exports[`FeStack snapshot prod 1`] = `
+{
+  "Outputs": {
+    "DistributionDomainName": {
+      "Value": {
+        "Fn::GetAtt": [
+          "Distribution830FAC52",
+          "DomainName",
+        ],
+      },
+    },
+  },
+  "Parameters": {
+    "BootstrapVersion": {
+      "Default": "/cdk-bootstrap/hnb659fds/version",
+      "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]",
+      "Type": "AWS::SSM::Parameter::Value<String>",
+    },
+  },
+  "Resources": {
+    "Distribution830FAC52": {
+      "Properties": {
+        "DistributionConfig": {
+          "CacheBehaviors": [
+            {
+              "AllowedMethods": [
+                "GET",
+                "HEAD",
+              ],
+              "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6",
+              "Compress": true,
+              "PathPattern": "/_next/static/*",
+              "TargetOriginId": "prodfeDistributionOrigin180D68E18",
+              "ViewerProtocolPolicy": "redirect-to-https",
+            },
+          ],
+          "Comment": "prod-profile-chat-ai-fe",
+          "DefaultCacheBehavior": {
+            "AllowedMethods": [
+              "GET",
+              "HEAD",
+              "OPTIONS",
+              "PUT",
+              "PATCH",
+              "POST",
+              "DELETE",
+            ],
+            "CachePolicyId": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad",
+            "Compress": true,
+            "OriginRequestPolicyId": "b689b0a8-53d0-40ab-baf2-68738e2966ac",
+            "TargetOriginId": "prodfeDistributionOrigin180D68E18",
+            "ViewerProtocolPolicy": "redirect-to-https",
+          },
+          "Enabled": true,
+          "HttpVersion": "http2",
+          "IPV6Enabled": true,
+          "Origins": [
+            {
+              "CustomOriginConfig": {
+                "OriginProtocolPolicy": "https-only",
+                "OriginSSLProtocols": [
+                  "TLSv1.2",
+                ],
+              },
+              "DomainName": {
+                "Fn::Select": [
+                  2,
+                  {
+                    "Fn::Split": [
+                      "/",
+                      {
+                        "Fn::GetAtt": [
+                          "FeFunctionFunctionUrlCE837F59",
+                          "FunctionUrl",
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+              "Id": "prodfeDistributionOrigin180D68E18",
+              "OriginAccessControlId": {
+                "Fn::GetAtt": [
+                  "DistributionOrigin1FunctionUrlOriginAccessControl1DA0EA55",
+                  "Id",
+                ],
+              },
+            },
+          ],
+        },
+      },
+      "Type": "AWS::CloudFront::Distribution",
+    },
+    "DistributionOrigin1FunctionUrlOriginAccessControl1DA0EA55": {
+      "Properties": {
+        "OriginAccessControlConfig": {
+          "Name": "prodfeDistributionOrigin1FunctionUrlOriginAccessControl3181C6A2",
+          "OriginAccessControlOriginType": "lambda",
+          "SigningBehavior": "always",
+          "SigningProtocol": "sigv4",
+        },
+      },
+      "Type": "AWS::CloudFront::OriginAccessControl",
+    },
+    "DistributionOrigin1InvokeFromApiForprodfeDistributionOrigin180D68E18C1F7EA80": {
+      "Properties": {
+        "Action": "lambda:InvokeFunctionUrl",
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "FeFunctionFunctionUrlCE837F59",
+            "FunctionArn",
+          ],
+        },
+        "Principal": "cloudfront.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":cloudfront::",
+              {
+                "Ref": "AWS::AccountId",
+              },
+              ":distribution/",
+              {
+                "Ref": "Distribution830FAC52",
+              },
+            ],
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Permission",
+    },
+    "FeFunctionC517B7C7": {
+      "DependsOn": [
+        "FeFunctionServiceRoleDefaultPolicyC5F6EC0F",
+        "FeFunctionServiceRoleCE7E81CB",
+      ],
+      "Properties": {
+        "Architectures": [
+          "arm64",
+        ],
+        "Code": {
+          "ImageUri": {
+            "Fn::Join": [
+              "",
+              [
+                "123456789012.dkr.ecr.ap-northeast-1.",
+                {
+                  "Ref": "AWS::URLSuffix",
+                },
+                "/profile-chat-ai-fe:prod-latest",
+              ],
+            ],
+          },
+        },
+        "Environment": {
+          "Variables": {
+            "AWS_LWA_INVOKE_MODE": "response_stream",
+            "AWS_LWA_PORT": "3000",
+            "PYTHON_API_URL": {
+              "Fn::ImportValue": "prod-api:ExportsOutputFnGetAttApiFunctionFunctionUrl73AD62DCFunctionUrlC0C6CE5A",
+            },
+          },
+        },
+        "FunctionName": "prod-profile-chat-ai-fe",
+        "MemorySize": 1024,
+        "PackageType": "Image",
+        "Role": {
+          "Fn::GetAtt": [
+            "FeFunctionServiceRoleCE7E81CB",
+            "Arn",
+          ],
+        },
+        "Timeout": 30,
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "FeFunctionFunctionUrlCE837F59": {
+      "Properties": {
+        "AuthType": "AWS_IAM",
+        "InvokeMode": "RESPONSE_STREAM",
+        "TargetFunctionArn": {
+          "Fn::GetAtt": [
+            "FeFunctionC517B7C7",
+            "Arn",
+          ],
+        },
+      },
+      "Type": "AWS::Lambda::Url",
+    },
+    "FeFunctionServiceRoleCE7E81CB": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "FeFunctionServiceRoleDefaultPolicyC5F6EC0F": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "lambda:InvokeFunctionUrl",
+              "Condition": {
+                "StringEquals": {
+                  "lambda:FunctionUrlAuthType": "AWS_IAM",
+                },
+              },
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "prod-api:ExportsOutputFnGetAttApiFunctionCE271BD4Arn4729005E",
+              },
+            },
+            {
+              "Action": "lambda:InvokeFunction",
+              "Condition": {
+                "Bool": {
+                  "lambda:InvokedViaFunctionUrl": true,
+                },
+              },
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::ImportValue": "prod-api:ExportsOutputFnGetAttApiFunctionCE271BD4Arn4729005E",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "FeFunctionServiceRoleDefaultPolicyC5F6EC0F",
+        "Roles": [
+          {
+            "Ref": "FeFunctionServiceRoleCE7E81CB",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+  },
+  "Rules": {
+    "CheckBootstrapVersion": {
+      "Assertions": [
+        {
+          "Assert": {
+            "Fn::Not": [
+              {
+                "Fn::Contains": [
+                  [
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                  ],
+                  {
+                    "Ref": "BootstrapVersion",
+                  },
+                ],
+              },
+            ],
+          },
+          "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI.",
+        },
+      ],
+    },
+  },
+}
+`;
