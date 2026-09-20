@@ -170,6 +170,101 @@ exports[`CiStack snapshot matches snapshot 1`] = `
       },
       "Type": "AWS::IAM::Role",
     },
+    "FeGitHubActionsRole55B3FD51": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRoleWithWebIdentity",
+              "Condition": {
+                "StringEquals": {
+                  "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+                },
+                "StringLike": {
+                  "token.actions.githubusercontent.com:sub": "repo:ktr11/profile-chat-ai-fe:ref:refs/heads/main",
+                },
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "Federated": {
+                  "Ref": "GitHubOidcProvider7EBF861F",
+                },
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "RoleName": "ci-fe-github-actions-role",
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "FeGitHubActionsRoleDefaultPolicyE65C501C": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "ecr:GetAuthorizationToken",
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+            {
+              "Action": [
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:PutImage",
+                "ecr:InitiateLayerUpload",
+                "ecr:UploadLayerPart",
+                "ecr:CompleteLayerUpload",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "FeRepository1C9690D2",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "lambda:UpdateFunctionCode",
+                "lambda:GetFunction",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":lambda:ap-northeast-1:123456789012:function:*-profile-chat-ai-fe",
+                  ],
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "FeGitHubActionsRoleDefaultPolicyE65C501C",
+        "Roles": [
+          {
+            "Ref": "FeGitHubActionsRole55B3FD51",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "FeRepository1C9690D2": {
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "LifecyclePolicy": {
+          "LifecyclePolicyText": "{"rules":[{"rulePriority":1,"description":"Keep last 10 images","selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":10},"action":{"type":"expire"}}]}",
+        },
+        "RepositoryName": "profile-chat-ai-fe",
+      },
+      "Type": "AWS::ECR::Repository",
+      "UpdateReplacePolicy": "Retain",
+    },
     "GitHubActionsRole4F1BBA26": {
       "Properties": {
         "AssumeRolePolicyDocument": {
